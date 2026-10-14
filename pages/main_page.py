@@ -1,10 +1,10 @@
 from selenium.webdriver.common.keys import Keys
-
 from pages.base_page import BasePage
 from pages.locators import MainLocators
 
 
 class MainPage(BasePage):
+
     def set_from(self, address):
         self._fill_address(MainLocators.FROM_INPUT, address)
 
@@ -24,7 +24,7 @@ class MainPage(BasePage):
 
     def _fill_address(self, locator, address):
         element = self.find_visible(locator)
-        self.driver.execute_script("arguments[0].click();", element)
+        self.execute_script("arguments[0].click();", element)
         element.clear()
         element.send_keys(address)
         element.send_keys(Keys.ENTER)

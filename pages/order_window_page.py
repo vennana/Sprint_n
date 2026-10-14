@@ -1,10 +1,9 @@
-from selenium.webdriver.support.ui import WebDriverWait
-
 from pages.base_page import BasePage
 from pages.locators import OrderWindowLocators
 
 
 class OrderWindowPage(BasePage):
+
     def is_shown(self):
         return self.wait_until_visible(
             OrderWindowLocators.ORDER_WINDOW
@@ -19,14 +18,16 @@ class OrderWindowPage(BasePage):
         return self.find_visible(OrderWindowLocators.ORDER_TITLE).text
 
     def wait_for_completed_order(self, timeout):
-        wait = WebDriverWait(self.driver, timeout)
-        return wait.until(
+        self.wait_for_condition(
             lambda d: "мин. и приедет"
-            in d.find_element(*OrderWindowLocators.ORDER_TITLE).text
+            in d.find_element(*OrderWindowLocators.ORDER_TITLE).text,
+            timeout=timeout,
         )
 
     def click_button(self, button_text):
-        groups = self.find_all_present(OrderWindowLocators.BUTTON_GROUPS)
+        groups = self.find_all_present(
+            OrderWindowLocators.BUTTON_GROUPS
+        )
         for group in groups:
             if button_text in group.text:
                 group.find_element(
@@ -36,7 +37,7 @@ class OrderWindowPage(BasePage):
         raise AssertionError(f"Кнопка не найдена: {button_text}")
 
     def wait_for_details(self):
-        self.wait.until(
+        self.wait_for_condition(
             lambda d: len(
                 d.find_elements(*OrderWindowLocators.DETAILS_ROWS)
             ) > 0

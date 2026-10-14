@@ -1,4 +1,3 @@
-from selenium.webdriver.common.by import By
 from pages.base_page import BasePage
 from pages.locators import TaxiOrderLocators
 
@@ -13,7 +12,9 @@ class TaxiOrderPage(BasePage):
         ]
 
     def tariff_count(self):
-        return len(self.find_all_present(TaxiOrderLocators.TARIFF_CARDS))
+        return len(
+            self.find_all_present(TaxiOrderLocators.TARIFF_CARDS)
+        )
 
     def active_tariff_names(self):
         cards = self.find_all_present(TaxiOrderLocators.TARIFF_CARDS)
@@ -36,7 +37,8 @@ class TaxiOrderPage(BasePage):
         raise AssertionError(f"Тариф не найден: {name}")
 
     def show_tariff_tooltip(self, index):
-        self.driver.execute_script(
+        # 1. Сбрасываем все предыдущие hover через JS
+        self.execute_script(
             """
             document.querySelectorAll(
                 '.tariff-cards .tcard .i-button'
@@ -48,18 +50,19 @@ class TaxiOrderPage(BasePage):
             """
         )
 
-        self.wait.until(
+        # 2. Ждём, пока все тултипы потеряют класс show
+        self.wait_for_condition(
             lambda d: all(
                 "show" not in (el.get_attribute("class") or "").split()
                 for el in d.find_elements(
-                    By.CSS_SELECTOR,
-                    ".__react_component_tooltip",
+                    *TaxiOrderLocators.ALL_TOOLTIPS
                 )
                 if el.get_attribute("id")
             )
         )
 
-        self.driver.execute_script(
+        # 3. Отправляем JS-события напрямую через querySelector
+        self.execute_script(
             f"""
             const card = document.querySelectorAll(
                 '.tariff-cards .tcard'
@@ -75,38 +78,34 @@ class TaxiOrderPage(BasePage):
             """
         )
 
-        self.wait.until(
+        # 4. Ждём появления класса show у конкретного тултипа
+        tooltip_locator = TaxiOrderLocators.tooltip_by_index(index)
+        self.wait_for_condition(
             lambda d: "show"
-            in (
-                d.find_element(
-                    By.CSS_SELECTOR, f"#tariff-card-{index}"
-                ).get_attribute("class")
-                or ""
-            ).split()
+            in (d.find_element(*tooltip_locator)
+                 .get_attribute("class") or "").split()
         )
 
     def tooltip_title(self, index):
-        tooltip = self.find_present(
-            (By.CSS_SELECTOR, f"#tariff-card-{index}")
-        )
-        title_el = self.wait.until(
+        tooltip_locator = TaxiOrderLocators.tooltip_by_index(index)
+        tooltip = self.find_present(tooltip_locator)
+        title_el = self.wait_for_condition(
             lambda d: tooltip.find_element(
                 *TaxiOrderLocators.TOOLTIP_TITLE
             )
         )
-        self.wait.until(lambda d: title_el.text.strip() != "")
+        self.wait_for_condition(lambda d: title_el.text.strip() != "")
         return title_el.text.strip()
 
     def tooltip_description(self, index):
-        tooltip = self.find_present(
-            (By.CSS_SELECTOR, f"#tariff-card-{index}")
-        )
-        desc_el = self.wait.until(
+        tooltip_locator = TaxiOrderLocators.tooltip_by_index(index)
+        tooltip = self.find_present(tooltip_locator)
+        desc_el = self.wait_for_condition(
             lambda d: tooltip.find_element(
                 *TaxiOrderLocators.TOOLTIP_DESCRIPTION
             )
         )
-        self.wait.until(lambda d: desc_el.text.strip() != "")
+        self.wait_for_condition(lambda d: desc_el.text.strip() != "")
         return desc_el.text.strip()
 
     def form_fields_are_present(self):
@@ -132,9 +131,7 @@ class TaxiOrderPage(BasePage):
         element = self.find_present(
             TaxiOrderLocators.LAPTOP_REQUIREMENT_SWITCH
         )
-        self.driver.execute_script(
-            "arguments[0].click();", element
-        )
+        self.execute_script("arguments[0].click();", element)
 
     def click_order(self):
         self.click(TaxiOrderLocators.ORDER_BUTTON)

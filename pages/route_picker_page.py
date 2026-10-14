@@ -1,24 +1,20 @@
-from selenium.webdriver.common.by import By
-
 from pages.base_page import BasePage
 from pages.locators import RoutePickerLocators
 
 
 class RoutePickerPage(BasePage):
+
     def is_shown(self):
-        return self.find_visible(RoutePickerLocators.TYPE_PICKER).is_displayed()
+        return self.find_visible(
+            RoutePickerLocators.TYPE_PICKER
+        ).is_displayed()
 
     def mode_names(self):
         modes = self.find_all_visible(RoutePickerLocators.MODES)
         return [mode.text for mode in modes]
 
     def select_mode(self, name):
-        locator = (
-            By.XPATH,
-            "//div[contains(@class,'modes-container')]"
-            f"//div[contains(@class,'mode') "
-            f"and normalize-space()='{name}']",
-        )
+        locator = RoutePickerLocators.mode_by_name(name)
         self.click(locator)
 
     def active_mode(self):
@@ -45,10 +41,14 @@ class RoutePickerPage(BasePage):
         return self.find_visible(RoutePickerLocators.RESULT_TEXT).text
 
     def result_duration(self):
-        return self.find_visible(RoutePickerLocators.RESULT_DURATION).text
+        return self.find_visible(
+            RoutePickerLocators.RESULT_DURATION
+        ).text
 
     def action_button_text(self):
-        return self.find_visible(RoutePickerLocators.RESULT_BUTTON).text
+        return self.find_visible(
+            RoutePickerLocators.RESULT_BUTTON
+        ).text
 
     def click_action_button(self):
         self.click(RoutePickerLocators.RESULT_BUTTON)
