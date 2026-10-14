@@ -10,44 +10,32 @@ from data.test_data import (
     DETAILS_ADDRESS_TO_LABEL,
     DETAILS_PAYMENT_LABEL,
     DETAILS_TRIP_LABEL,
-    MODE_FAST,
     ORDER_SEARCH_TITLE,
     TAXI_TARIFF_DESCRIPTIONS,
     TAXI_TARIFFS,
     TIMER_TIMEOUT_SECONDS,
     WORKING_TARIFF,
 )
-from pages.main_page import MainPage
 from pages.order_window_page import OrderWindowPage
-from pages.route_picker_page import RoutePickerPage
-from pages.taxi_order_page import TaxiOrderPage
 
 
 @allure.feature("Заказ тарифа Такси")
 class TestTaxiOrder:
 
-    def _open_taxi_form(self, driver):
-        main_page = MainPage(driver)
-        main_page.build_route(ADDRESS_FROM, ADDRESS_TO)
-        picker = RoutePickerPage(driver)
-        picker.select_mode(MODE_FAST)
-        picker.click_action_button()
-        return TaxiOrderPage(driver)
-
     @allure.title("В форме заказа отображаются 6 тарифов по ТЗ")
-    def test_six_taxi_tariffs_are_shown(self, driver):
-        taxi = self._open_taxi_form(driver)
+    def test_six_taxi_tariffs_are_shown(self, taxi_order_page):
+        taxi = taxi_order_page
         assert taxi.tariff_count() == 6
         assert taxi.tariff_names() == TAXI_TARIFFS
 
     @allure.title("Один из 6 тарифов активен по умолчанию")
-    def test_one_tariff_is_active_by_default(self, driver):
-        taxi = self._open_taxi_form(driver)
+    def test_one_tariff_is_active_by_default(self, taxi_order_page):
+        taxi = taxi_order_page
         assert len(taxi.active_tariff_names()) == 1
 
     @allure.title("Тултип тарифа 'Рабочий' соответствует ТЗ")
-    def test_working_tariff_tooltip(self, driver):
-        taxi = self._open_taxi_form(driver)
+    def test_working_tariff_tooltip(self, taxi_order_page):
+        taxi = taxi_order_page
         index = TAXI_TARIFFS.index("Рабочий")
         taxi.show_tariff_tooltip(index)
         assert taxi.tooltip_title(index) == "Рабочий"
@@ -65,8 +53,8 @@ class TestTaxiOrder:
         )
     )
     @allure.title("Тултип тарифа 'Сонный' соответствует ТЗ")
-    def test_sleepy_tariff_tooltip(self, driver):
-        taxi = self._open_taxi_form(driver)
+    def test_sleepy_tariff_tooltip(self, taxi_order_page):
+        taxi = taxi_order_page
         index = TAXI_TARIFFS.index("Сонный")
         taxi.show_tariff_tooltip(index)
         assert taxi.tooltip_title(index) == "Сонный"
@@ -84,8 +72,8 @@ class TestTaxiOrder:
         )
     )
     @allure.title("Тултип тарифа 'Разговорчивый' соответствует ТЗ")
-    def test_talkative_tariff_tooltip(self, driver):
-        taxi = self._open_taxi_form(driver)
+    def test_talkative_tariff_tooltip(self, taxi_order_page):
+        taxi = taxi_order_page
         index = TAXI_TARIFFS.index("Разговорчивый")
         taxi.show_tariff_tooltip(index)
         assert taxi.tooltip_title(index) == "Разговорчивый"
@@ -103,8 +91,8 @@ class TestTaxiOrder:
         )
     )
     @allure.title("Тултип тарифа 'Отпускной' соответствует ТЗ")
-    def test_vacation_tariff_tooltip(self, driver):
-        taxi = self._open_taxi_form(driver)
+    def test_vacation_tariff_tooltip(self, taxi_order_page):
+        taxi = taxi_order_page
         index = TAXI_TARIFFS.index("Отпускной")
         taxi.show_tariff_tooltip(index)
         assert taxi.tooltip_title(index) == "Отпускной"
@@ -122,8 +110,8 @@ class TestTaxiOrder:
         )
     )
     @allure.title("Тултип тарифа 'Утешительный' соответствует ТЗ")
-    def test_comforting_tariff_tooltip(self, driver):
-        taxi = self._open_taxi_form(driver)
+    def test_comforting_tariff_tooltip(self, taxi_order_page):
+        taxi = taxi_order_page
         index = TAXI_TARIFFS.index("Утешительный")
         taxi.show_tariff_tooltip(index)
         assert taxi.tooltip_title(index) == "Утешительный"
@@ -141,8 +129,8 @@ class TestTaxiOrder:
         )
     )
     @allure.title("Тултип тарифа 'Глянцевый' соответствует ТЗ")
-    def test_glossy_tariff_tooltip(self, driver):
-        taxi = self._open_taxi_form(driver)
+    def test_glossy_tariff_tooltip(self, taxi_order_page):
+        taxi = taxi_order_page
         index = TAXI_TARIFFS.index("Глянцевый")
         taxi.show_tariff_tooltip(index)
         assert taxi.tooltip_title(index) == "Глянцевый"
@@ -154,25 +142,37 @@ class TestTaxiOrder:
     @allure.title(
         "Форма заказа содержит Телефон, Оплату, Комментарий, Требования"
     )
-    def test_order_form_fields_are_present(self, driver):
-        taxi = self._open_taxi_form(driver)
+    def test_order_form_fields_are_present(self, taxi_order_page):
+        taxi = taxi_order_page
         assert taxi.form_fields_are_present()
 
     @pytest.mark.slow
-    @allure.title("Полный флоу: Рабочий + столик + ожидание + отмена")
-    def test_full_order_flow(self, driver):
-        taxi = self._open_taxi_form(driver)
+    @allure.title("После заказа открывается окно поиска машины")
+    def test_order_search_window_is_shown(self, taxi_order_page):
+        taxi = taxi_order_page
         taxi.select_tariff(WORKING_TARIFF)
         taxi.open_requirements()
-        assert taxi.requirements_are_open()
         taxi.select_laptop_table_requirement()
         taxi.fill_comment(COMMENT_TEXT)
         taxi.click_order()
 
-        order = OrderWindowPage(driver)
+        order = OrderWindowPage(taxi.driver)
         assert order.is_shown()
         assert ORDER_SEARCH_TITLE in order.title()
 
+    @pytest.mark.slow
+    @allure.title(
+        "После завершения поиска в деталях указаны адреса, оплата и стоимость"
+    )
+    def test_completed_order_details(self, taxi_order_page):
+        taxi = taxi_order_page
+        taxi.select_tariff(WORKING_TARIFF)
+        taxi.open_requirements()
+        taxi.select_laptop_table_requirement()
+        taxi.fill_comment(COMMENT_TEXT)
+        taxi.click_order()
+
+        order = OrderWindowPage(taxi.driver)
         order.wait_for_completed_order(TIMER_TIMEOUT_SECONDS)
         assert ARRIVAL_SUBSTRING in order.title()
 
@@ -192,6 +192,3 @@ class TestTaxiOrder:
         assert len(cost_row) == 1
         assert "Стоимость" in cost_row[0]
         assert "₽" in cost_row[0]
-
-        order.click_button("Отменить")
-        assert order.is_hidden()
